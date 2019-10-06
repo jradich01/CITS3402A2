@@ -26,9 +26,9 @@ namespace DijkstraAlgorithm
 					{-1, 15, 1, 1 }, // 0
 					{-1, -1, 3,-1 }, // 1
 					{ 1,  3,-1,-1 }, // 2
-					{-1,  1,-1,-1 }  // 3
+					{-1,  1, 1,-1 }  // 3
 				};
-
+			
 			for (int i = 0; i < nodes; i++)
 			{
 				doStuff(nodes, i, i, doneList, nodeArray, dataArray);
@@ -100,10 +100,13 @@ namespace DijkstraAlgorithm
 			{
 				if(doneArray[i] != 1)
 				{
-					if(lowest == -1 || nodeArray[startNode,i] < lowest)
+					if (nodeArray[startNode, i] != 0)
 					{
-						lowest = nodeArray[startNode,i];
-						node = i;
+						if (lowest == -1 || nodeArray[startNode, i] < lowest)
+						{
+							lowest = nodeArray[startNode, i];
+							node = i;
+						}
 					}
 				}
 			}
