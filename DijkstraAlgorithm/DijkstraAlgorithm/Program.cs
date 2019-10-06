@@ -38,7 +38,7 @@ namespace DijkstraAlgorithm
 		}
 
 
-		//need to figure out startNode, current stuff
+		//todo: code clean up and then write in c
 		static void doStuff(int nodes, int startNode, int current, int[] doneList, int[,] nodeArray, int[,] dataArray)
 		{
 			int val = 0;
