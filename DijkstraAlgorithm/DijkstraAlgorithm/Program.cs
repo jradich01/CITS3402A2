@@ -10,16 +10,8 @@ namespace DijkstraAlgorithm
 	{
 		static void Main(string[] args)
 		{
-			attemptTwo();
-			Console.ReadLine();
-		}
-
-
-
-		static void attemptTwo()
-		{
 			int nodes = 4;
-			int[,] nodeArray = new int[nodes,nodes];
+			int[,] nodeArray = new int[nodes, nodes];
 			int[] doneList = new int[nodes];
 			int[,] dataArray = new int[,]
 				{  // 0  1   2   3
@@ -28,18 +20,17 @@ namespace DijkstraAlgorithm
 					{ 1,  3,-1,-1 }, // 2
 					{-1,  1, 1,-1 }  // 3
 				};
-			
+
 			for (int i = 0; i < nodes; i++)
 			{
-				doStuff(nodes, i, i, doneList, nodeArray, dataArray);
+				ProcessArray(nodes, i, i, doneList, nodeArray, dataArray);
 				doneList = new int[nodes];
 			}
-			printArray("NodeArray ", nodeArray);
+			printArray(nodeArray);
+			Console.ReadLine();
 		}
 
-
-		//todo: code clean up and then write in c
-		static void doStuff(int nodes, int startNode, int current, int[] doneList, int[,] nodeArray, int[,] dataArray)
+		static void ProcessArray(int nodes, int startNode, int current, int[] doneList, int[,] nodeArray, int[,] dataArray)
 		{
 			int val = 0;
 			for(int i=0; i<nodes; i++)
@@ -64,21 +55,11 @@ namespace DijkstraAlgorithm
 			int next = getLowestThatIsntDone(startNode,nodeArray, doneList);
 			if(next != -1)
 			{
-				doStuff(nodes,startNode, next, doneList, nodeArray, dataArray);
+				ProcessArray(nodes,startNode, next, doneList, nodeArray, dataArray);
 			}
 		}
 
-		static void printArray(string title, int[] arr)
-		{
-			int len = arr.Length;
-			Console.WriteLine(title);
-			for (int i = 0; i < arr.Length; i++)
-			{
-				Console.WriteLine("{0}: {1}", i, arr[i]);
-			}
-		}
-
-		static void printArray(string title, int[,] arr)
+		static void printArray(int[,] arr)
 		{
 			int lenA = arr.GetLength(0);
 			int lenB = arr.GetLength(1);
@@ -110,10 +91,7 @@ namespace DijkstraAlgorithm
 					}
 				}
 			}
-
 			return node;
 		}
-
-
 	}
 }
