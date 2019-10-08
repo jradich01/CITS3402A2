@@ -15,10 +15,10 @@ namespace DijkstraAlgorithm
 			int[] doneList = new int[nodes];
 			int[,] dataArray = new int[,]
 				{  // 0  1   2   3
-					{-1, 15, 1, 1 }, // 0
-					{-1, -1, 3,-1 }, // 1
-					{ 1,  3,-1,-1 }, // 2
-					{-1,  1, 1,-1 }  // 3
+					{0, 15, 1, 1 }, // 0
+					{0, 0, 3,0 }, // 1
+					{ 1,  3,0,0 }, // 2
+					{0,  1, 1,0 }  // 3
 				};
 
 			for (int i = 0; i < nodes; i++)
@@ -39,7 +39,7 @@ namespace DijkstraAlgorithm
 				{
 					if(doneList[i] != 1)
 					{
-						if(dataArray[current,i] != -1)
+						if(dataArray[current,i] != 0)
 						{
 							val = nodeArray[startNode,current] + dataArray[current, i];
 							if (nodeArray[startNode,i] == 0 || val < nodeArray[startNode,i])
