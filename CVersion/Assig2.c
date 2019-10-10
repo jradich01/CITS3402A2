@@ -1,5 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
+#include<string.h>
+#include<time.h>
 
 
 void setArrayToZero(int* arr, int size);
@@ -8,29 +10,45 @@ void loadFile(int** nodeArray, int nodes, FILE* f);
 void printArray(int** arr, int len);
 void processArray(int nodes, int startNode, int current, int* doneList, int** nodeArray, int** dataArray);
 int getLowestThatIsntDone(int startNode,int** nodeArray, int* doneArray, int nodes);
+void printArrayToFile(char* fileName,int nodes, int** arr);
 
 int main(int argc, char** argv){
 	
 	int nodes=0;
 	int doneList[nodes];
 	int** nodeArray;
-	int** dataArray;
+	int** dataArray;	
+	FILE* f;
 	
-	FILE* f = fopen("4.in","rb");
+	if(argc < 2){
+		printf("File name need to be supplied");
+		exit(0);
+	}
+	
+	f= fopen(argv[1],"rb");
+	if(f==NULL){
+		printf("Unable to open file\n");
+		exit(0);
+	}
 	fread(&nodes,sizeof(int),1,f);
 	initialiseArray(&nodeArray,nodes);
 	initialiseArray(&dataArray,nodes);
+	
+	
 	loadFile(dataArray,nodes,f);
 	
-	for(int i=0;i<nodes;i++){
-		
+	clock_t begin = clock();
+	for(int i=0;i<nodes;i++){	
 		processArray(nodes,i,i,doneList,nodeArray,dataArray);
 		setArrayToZero(doneList,nodes);
 	}
+	clock_t end = clock();
+	double procTimeTaken = (end - begin) / CLOCKS_PER_SEC;
 	
-	printArray(nodeArray,nodes);
-	printf("Worx!! %d \n",nodeArray[0][0]);
-	printf("Nodes: %d\n",nodes);
+	printf("Time Taken: %f\n",procTimeTaken);
+	printArrayToFile(argv[1],nodes,nodeArray);
+	printArray(nodeArray,nodes);  
+	printf("Good so far");
 	fclose(f);
 }
 
@@ -76,12 +94,11 @@ int getLowestThatIsntDone(int startNode,int** nodeArray, int* doneArray, int nod
 void initialiseArray(int*** incArr, int size){
 	int** arr = malloc(sizeof(int*)*size);
 	for(int i=0; i<size; i++){
-		arr[i] = (int*)malloc(sizeof(int)*4);
+		arr[i] = (int*)malloc(sizeof(int)*size);
 		for(int j=0;j<size;j++){
 			arr[i][j] = 0;
 		}
 	}
-	printf("%d\n",arr[0][0]);
 	*incArr = arr;	
 }
 
@@ -113,4 +130,31 @@ void printArray(int** arr, int len){
 		}
 		printf("\n");
 	}
+}
+
+void printArrayToFile(char* fileName,int nodes, int** arr){
+	char outName[100];
+	int i=0;
+	while(fileName[i] != '.'){
+		outName[i] = fileName[i];
+		i++;
+	}
+	outName[i] = '\0';
+	strcat(outName,".out");
+	printf("%s\n",outName);	
+	
+	FILE* f= fopen(outName,"w");
+	if(f==NULL){
+		printf("Unable to create output file\n");
+		exit(0);
+	}
+	
+	fprintf(f,"%d\n",nodes);
+	for(int i=0;i<nodes;i++){
+		for(int j=0;j<nodes;j++){
+			fprintf(f,"%d ",arr[i][j]);
+		}
+		fprintf(f,"\n");
+	}
+	fclose(f);	
 }
