@@ -3,19 +3,18 @@
 #include<string.h>
 #include<time.h>
 
-
 void setArrayToZero(int* arr, int size);
 void initialiseArray(int*** arr, int size);
 void loadFile(int** nodeArray, int nodes, FILE* f);
 void printArray(int** arr, int len);
-void processArray(int nodes, int startNode, int current, int* doneList, int** nodeArray, int** dataArray);
+int processArray(int nodes, int startNode, int current, int* doneList, int** nodeArray, int** dataArray);
 int getLowestThatIsntDone(int startNode,int** nodeArray, int* doneArray, int nodes);
 void printArrayToFile(char* fileName,int nodes, int** arr);
 
 int main(int argc, char** argv){
 	
 	int nodes=0;
-	int doneList[nodes];
+	int* doneList;
 	int** nodeArray;
 	int** dataArray;	
 	FILE* f;
@@ -31,28 +30,32 @@ int main(int argc, char** argv){
 		exit(0);
 	}
 	fread(&nodes,sizeof(int),1,f);
+	doneList = malloc(sizeof(int)*nodes);
+	setArrayToZero(doneList,nodes);
 	initialiseArray(&nodeArray,nodes);
 	initialiseArray(&dataArray,nodes);
 	
 	
 	loadFile(dataArray,nodes,f);
-	
+	printf("Calculating...\n");
 	clock_t begin = clock();
+	int next = 0;
 	for(int i=0;i<nodes;i++){	
-		processArray(nodes,i,i,doneList,nodeArray,dataArray);
+		next = i;
+		while(next != -1){
+			next= processArray(nodes,i,next,doneList,nodeArray,dataArray);
+		}
 		setArrayToZero(doneList,nodes);
 	}
 	clock_t end = clock();
-	double procTimeTaken = (end - begin) / CLOCKS_PER_SEC;
+	double procTimeTaken = (double)(end - begin) / CLOCKS_PER_SEC;
 	
-	printf("Time Taken: %f\n",procTimeTaken);
+	printf("Completed in: %f\n",procTimeTaken);
 	printArrayToFile(argv[1],nodes,nodeArray);
-	printArray(nodeArray,nodes);  
-	printf("Good so far");
 	fclose(f);
 }
 
-void processArray(int nodes, int startNode, int current, int* doneList, int** nodeArray, int** dataArray){
+int processArray(int nodes, int startNode, int current, int* doneList, int** nodeArray, int** dataArray){
 	int val=0;
 	for(int i=0;i<nodes;i++){
 		if(i!=startNode){
@@ -69,10 +72,7 @@ void processArray(int nodes, int startNode, int current, int* doneList, int** no
 	
 	doneList[current] =1;
 	int next = getLowestThatIsntDone(startNode,nodeArray,doneList,nodes);
-	
-	if(next!=-1){
-		processArray(nodes,startNode,next,doneList,nodeArray,dataArray);
-	}
+	return next;
 }
 
 int getLowestThatIsntDone(int startNode,int** nodeArray, int* doneArray, int nodes){
@@ -141,7 +141,6 @@ void printArrayToFile(char* fileName,int nodes, int** arr){
 	}
 	outName[i] = '\0';
 	strcat(outName,".out");
-	printf("%s\n",outName);	
 	
 	FILE* f= fopen(outName,"w");
 	if(f==NULL){
