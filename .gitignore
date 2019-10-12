@@ -1,6 +1,5 @@
 #dont include the following
 *.exe
 *.out
-*.in
 *.txt
 *.stackdump
