@@ -2,6 +2,7 @@
 #include<stdlib.h>
 #include<string.h>
 #include<time.h>
+#include "mpi.h"
 
 void setArrayToZero(int* arr, int size);
 void initialiseArray(int*** arr, int size);
@@ -10,35 +11,76 @@ void printArray(int** arr, int len);
 int processArray(int nodes, int startNode, int current, int* doneList, int** nodeArray, int** dataArray);
 int getLowestThatIsntDone(int startNode,int** nodeArray, int* doneArray, int nodes);
 void printArrayToFile(char* fileName,int nodes, int** arr);
+void getMinAndMax(int nodes,int procs, int rank, int* min, int* max);
 
 int main(int argc, char** argv){
 	
-	int nodes=0;
+	MPI_Init(&argc,&argv);
+
+	int nodes=0, min=0, max=0;
 	int* doneList;
 	int** nodeArray;
-	int** dataArray;	
-	FILE* f;
+	int** dataArray;
+	clock_t begin, end;	
 	
-	if(argc < 2){
-		printf("File name need to be supplied");
-		exit(0);
+	int rank,total;
+	MPI_Request request;
+	MPI_Status status;
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &total);
+
+	
+
+	if(rank==0){
+		FILE* f;
+		if(argc < 2){
+			printf("File name need to be supplied");
+			exit(0);
+		}	
+	
+		f= fopen(argv[1],"rb");
+		if(f==NULL){
+			printf("Unable to open file\n");
+			exit(0);
+		}
+
+		fread(&nodes,sizeof(int),1,f);
+		MPI_Bcast(&nodes,1,MPI_INT,0,MPI_COMM_WORLD);  //send number of nodes to everyone
+		initialiseArray(&dataArray,nodes);
+		loadFile(dataArray,nodes,f);
+		fclose(f);
+		MPI_Bcast(&(dataArray[0][0]),nodes*nodes,MPI_INT,0,MPI_COMM_WORLD); //send data array
+		printf("Calculating...\n");
+		begin = clock();
+	}
+	else{
+		MPI_Bcast(&nodes,1,MPI_INT,0,MPI_COMM_WORLD); //receive number of nodes
+		initialiseArray(&dataArray,nodes);
+		MPI_Bcast(&(dataArray[0][0]),nodes*nodes,MPI_INT,0,MPI_COMM_WORLD); //receive array
 	}
 	
-	f= fopen(argv[1],"rb");
-	if(f==NULL){
-		printf("Unable to open file\n");
-		exit(0);
+	printf("Rank: %d working\n",rank);
+	doneList = malloc(sizeof(int)*nodes);  //all ranks do this
+	setArrayToZero(doneList,nodes);        //
+	initialiseArray(&nodeArray,nodes);     //
+	getMinAndMax(nodes,total,rank,&min,&max);
+
+	printf("I'm rank: %d and I'm doing from %d to %d\n",rank,min,max);
+
+	if(max>=min){  // if max is less than min, theres more procs than nodes.
+		int next = 0;
+		for(int i=min;i<=max;i++){
+			next = i;
+			while(next != -1){
+				next = processArray(nodes,i,next,doneList,nodeArray,dataArray);
+			}
+			setArrayToZero(doneList,nodes);
+		}
+		printf("Rank %d worked\n",rank);
 	}
-	fread(&nodes,sizeof(int),1,f);
-	doneList = malloc(sizeof(int)*nodes);
-	setArrayToZero(doneList,nodes);
-	initialiseArray(&nodeArray,nodes);
-	initialiseArray(&dataArray,nodes);
+
 	
-	
-	loadFile(dataArray,nodes,f);
-	printf("Calculating...\n");
-	clock_t begin = clock();
+	/*
 	int next = 0;
 	for(int i=0;i<nodes;i++){	
 		next = i;
@@ -46,13 +88,35 @@ int main(int argc, char** argv){
 			next= processArray(nodes,i,next,doneList,nodeArray,dataArray);
 		}
 		setArrayToZero(doneList,nodes);
+	} 
+
+
+	if(rank==0){
+		end = clock();
+		double procTimeTaken = (double)(end - begin) / CLOCKS_PER_SEC;
+		printf("Completed in: %f\n",procTimeTaken);
+		printArrayToFile(argv[1],nodes,nodeArray);
 	}
-	clock_t end = clock();
-	double procTimeTaken = (double)(end - begin) / CLOCKS_PER_SEC;
+	*/
+	MPI_Finalize();
+}
+
+void getMinAndMax(int nodes,int procs, int rank, int* min, int* max){
+	int toAssign = nodes;
+	int assigned = 0;
 	
-	printf("Completed in: %f\n",procTimeTaken);
-	printArrayToFile(argv[1],nodes,nodeArray);
-	fclose(f);
+	
+	assigned = toAssign / procs;
+	toAssign = toAssign % procs;
+	if(rank < toAssign){
+		assigned++;
+		*min = rank * assigned;
+		*max = *min + assigned -1;
+	}
+	else{
+		*min = rank * assigned + toAssign;
+		*max = *min + assigned - 1;
+	}
 }
 
 int processArray(int nodes, int startNode, int current, int* doneList, int** nodeArray, int** dataArray){
@@ -92,12 +156,16 @@ int getLowestThatIsntDone(int startNode,int** nodeArray, int* doneArray, int nod
 }
 
 void initialiseArray(int*** incArr, int size){
+	int fullSize = size * size;
 	int** arr = malloc(sizeof(int*)*size);
+	int* data = (int*)malloc(sizeof(int)*fullSize);
+	
+	for(int i=0;i<fullSize;i++){
+		data[i]=0;
+	}
+
 	for(int i=0; i<size; i++){
-		arr[i] = (int*)malloc(sizeof(int)*size);
-		for(int j=0;j<size;j++){
-			arr[i][j] = 0;
-		}
+		arr[i] = &(data[size*i]);
 	}
 	*incArr = arr;	
 }
