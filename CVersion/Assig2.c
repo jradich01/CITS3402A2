@@ -21,6 +21,7 @@ int main(int argc, char** argv){
 	int* doneList;
 	int** nodeArray;
 	int** dataArray;
+	int** finalArray;
 	clock_t begin, end;	
 	
 	int rank,total;
@@ -28,8 +29,6 @@ int main(int argc, char** argv){
 	MPI_Status status;
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &total);
-
-	
 
 	if(rank==0){
 		FILE* f;
@@ -47,11 +46,12 @@ int main(int argc, char** argv){
 		fread(&nodes,sizeof(int),1,f);
 		MPI_Bcast(&nodes,1,MPI_INT,0,MPI_COMM_WORLD);  //send number of nodes to everyone
 		initialiseArray(&dataArray,nodes);
+		initialiseArray(&finalArray,nodes);
 		loadFile(dataArray,nodes,f);
 		fclose(f);
+		begin = clock();
 		MPI_Bcast(&(dataArray[0][0]),nodes*nodes,MPI_INT,0,MPI_COMM_WORLD); //send data array
 		printf("Calculating...\n");
-		begin = clock();
 	}
 	else{
 		MPI_Bcast(&nodes,1,MPI_INT,0,MPI_COMM_WORLD); //receive number of nodes
@@ -59,13 +59,13 @@ int main(int argc, char** argv){
 		MPI_Bcast(&(dataArray[0][0]),nodes*nodes,MPI_INT,0,MPI_COMM_WORLD); //receive array
 	}
 	
-	printf("Rank: %d working\n",rank);
+	//printf("Rank: %d working\n",rank);
 	doneList = malloc(sizeof(int)*nodes);  //all ranks do this
 	setArrayToZero(doneList,nodes);        //
 	initialiseArray(&nodeArray,nodes);     //
 	getMinAndMax(nodes,total,rank,&min,&max);
 
-	printf("I'm rank: %d and I'm doing from %d to %d\n",rank,min,max);
+	//printf("I'm rank: %d and I'm doing from %d to %d\n",rank,min,max);
 
 	if(max>=min){  // if max is less than min, theres more procs than nodes.
 		int next = 0;
@@ -77,35 +77,24 @@ int main(int argc, char** argv){
 			setArrayToZero(doneList,nodes);
 		}
 		printf("Rank %d worked\n",rank);
+
+		int len = (max - min + 1)*nodes;
+		MPI_Gather(&(nodeArray[min][0]),len,MPI_INT,&(finalArray[min][0]),len,MPI_INT,0,MPI_COMM_WORLD);
 	}
-
-	
-	/*
-	int next = 0;
-	for(int i=0;i<nodes;i++){	
-		next = i;
-		while(next != -1){
-			next= processArray(nodes,i,next,doneList,nodeArray,dataArray);
-		}
-		setArrayToZero(doneList,nodes);
-	} 
-
 
 	if(rank==0){
 		end = clock();
 		double procTimeTaken = (double)(end - begin) / CLOCKS_PER_SEC;
 		printf("Completed in: %f\n",procTimeTaken);
-		printArrayToFile(argv[1],nodes,nodeArray);
+		printArrayToFile(argv[1],nodes,finalArray);
 	}
-	*/
+	
 	MPI_Finalize();
 }
 
 void getMinAndMax(int nodes,int procs, int rank, int* min, int* max){
 	int toAssign = nodes;
-	int assigned = 0;
-	
-	
+	int assigned = 0;	
 	assigned = toAssign / procs;
 	toAssign = toAssign % procs;
 	if(rank < toAssign){
