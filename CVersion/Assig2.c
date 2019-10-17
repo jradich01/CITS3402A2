@@ -30,66 +30,64 @@ int main(int argc, char** argv){
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &total);
 
-	if(rank==0){
+	if(rank==0){  //head node
 		FILE* f;
-		if(argc < 2){
-			printf("File name need to be supplied");
+		if(argc < 2){ // check if there's a file name
+			printf("File name needs to be supplied");
 			exit(0);
 		}	
 	
 		f= fopen(argv[1],"rb");
-		if(f==NULL){
+		if(f==NULL){  // try to open supplied file 
 			printf("Unable to open file\n");
 			exit(0);
 		}
 
-		fread(&nodes,sizeof(int),1,f);
+		fread(&nodes,sizeof(int),1,f); //get number of nodes from file  
 		MPI_Bcast(&nodes,1,MPI_INT,0,MPI_COMM_WORLD);  //send number of nodes to everyone
-		initialiseArray(&dataArray,nodes);
-		initialiseArray(&finalArray,nodes);
-		loadFile(dataArray,nodes,f);
-		fclose(f);
-		begin = clock();
-		MPI_Bcast(&(dataArray[0][0]),nodes*nodes,MPI_INT,0,MPI_COMM_WORLD); //send data array
+		initialiseArray(&dataArray,nodes); //initialise data array
+		initialiseArray(&finalArray,nodes); //initialise final results array
+		loadFile(dataArray,nodes,f);  // load data into array from file 
+		fclose(f);  //close file 
+		begin = clock();  // begin timing 
 		printf("Calculating...\n");
+		MPI_Bcast(&(dataArray[0][0]),nodes*nodes,MPI_INT,0,MPI_COMM_WORLD); //send data array to all nodes 
+		
 	}
-	else{
-		MPI_Bcast(&nodes,1,MPI_INT,0,MPI_COMM_WORLD); //receive number of nodes
-		initialiseArray(&dataArray,nodes);
+	else{  //for all other available nodes 
+		MPI_Bcast(&nodes,1,MPI_INT,0,MPI_COMM_WORLD); //receive number of nodes from head node 
+		initialiseArray(&dataArray,nodes); //all other nodes initialise data array 
 		MPI_Bcast(&(dataArray[0][0]),nodes*nodes,MPI_INT,0,MPI_COMM_WORLD); //receive array
 	}
 	
-	//printf("Rank: %d working\n",rank);
-	doneList = malloc(sizeof(int)*nodes);  //all ranks do this
-	setArrayToZero(doneList,nodes);        //
-	initialiseArray(&nodeArray,nodes);     //
-	getMinAndMax(nodes,total,rank,&min,&max);
-
-	//printf("I'm rank: %d and I'm doing from %d to %d\n",rank,min,max);
+	// all nodes including head node 
+	doneList = malloc(sizeof(int)*nodes);  //initialise done list array
+	setArrayToZero(doneList,nodes);        //set it to zero
+	initialiseArray(&nodeArray,nodes);     //initialise temp results array
+	getMinAndMax(nodes,total,rank,&min,&max); // get rows that node is going to process depending on rank 
 
 	if(max>=min){  // if max is less than min, theres more procs than nodes.
 		int next = 0;
-		for(int i=min;i<=max;i++){
+		for(int i=min;i<=max;i++){ //each node processes their assigned rows 
 			next = i;
-			while(next != -1){
+			while(next != -1){  //process path for each point 
 				next = processArray(nodes,i,next,doneList,nodeArray,dataArray);
 			}
-			setArrayToZero(doneList,nodes);
+			setArrayToZero(doneList,nodes); //reset done list for next point 
 		}
-		printf("Rank %d worked\n",rank);
 
-		int len = (max - min + 1)*nodes;
+		int len = (max - min + 1)*nodes;  //stitch final result array together at head node. 
 		MPI_Gather(&(nodeArray[min][0]),len,MPI_INT,&(finalArray[min][0]),len,MPI_INT,0,MPI_COMM_WORLD);
 	}
 
-	if(rank==0){
+	if(rank==0){  //head node only 
 		end = clock();
 		double procTimeTaken = (double)(end - begin) / CLOCKS_PER_SEC;
-		printf("Completed in: %f\n",procTimeTaken);
-		printArrayToFile(argv[1],nodes,finalArray);
+		printf("Completed in: %f\n",procTimeTaken);  //calculate time taken
+		printArrayToFile(argv[1],nodes,finalArray); //print array to file 
 	}
 	
-	MPI_Finalize();
+	MPI_Finalize();  //finish 
 }
 
 void getMinAndMax(int nodes,int procs, int rank, int* min, int* max){
