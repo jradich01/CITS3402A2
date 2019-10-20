@@ -80,7 +80,7 @@ int main(int argc, char** argv){
 			}
 			setArrayToZero(doneList,vertices); //reset done list for next point 
 		}
-
+		
 		int len = (max - min + 1)*vertices;  //stitch final result array together at head node. 
 		MPI_Gather(&(resultArray[min][0]),len,MPI_INT,&(finalArray[min][0]),len,MPI_INT,0,MPI_COMM_WORLD);
 	}
