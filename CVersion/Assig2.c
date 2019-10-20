@@ -17,6 +17,7 @@ int getLowestThatIsntDone(int startVert,int** resultArray, int* doneArray, int v
 void printArrayToFile(char* fileName,int vertices, int** arr);
 void getMinAndMax(int vertices,int procs, int rank, int* min, int* max);
 
+
 int main(int argc, char** argv){
 	
 	MPI_Init(&argc,&argv); //begin
@@ -88,9 +89,14 @@ int main(int argc, char** argv){
 		end = clock();
 		double procTimeTaken = (double)(end - begin) / CLOCKS_PER_SEC;
 		printf("Completed in: %f\n",procTimeTaken);  //calculate time taken
-		printArrayToFile(argv[1],vertices,finalArray); //print array to file 
+		printArrayToFile(argv[1],vertices,finalArray); //print array to file
+	       	free(finalArray);  //deallocate finalArray matrix	
 	}
-	
+
+	free(doneList);   //deallocate memory
+	free(dataArray);
+	free(resultArray);
+
 	MPI_Finalize();  //finish 
 }
 
@@ -228,3 +234,4 @@ void printArrayToFile(char* fileName,int vertices, int** arr){
 	}
 	fclose(f);	
 }
+
